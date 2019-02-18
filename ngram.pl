@@ -18,7 +18,7 @@ my @tokenArray = ();
 my %hash = ();
 
 # The size of the ngram model. If n=3 then the next word is based on the last 2 (n-1) words.
-my $n = 3;
+my $n = 4;
 
 # The number of sentences to generate.
 my $m = 10;
@@ -27,7 +27,18 @@ my $m = 10;
 my $START_TAG = chr(219);
 my $STOP_TAG = chr(220);
 
-say 'START';
+say '
+   _   _         _____ _____            __  __ 
+  | \ | |       / ____|  __ \     /\   |  \/  |
+  |  \| |______| |  __| |__) |   /  \  | \  / |
+  | . ` |______| | |_ |  _  /   / /\ \ | |\/| |
+  | |\  |      | |__| | | \ \  / ____ \| |  | |
+  |_| \_|       \_____|_|  \_\/_/    \_\_|  |_|
+                                                                                     
+';
+
+say '  Written by Jonathan Samson';
+say "  For CMSC 416-001 VCU Spring 2019\n";
 
 # Open the file
 my $inputFile = 'aviation-in-canada.txt';
@@ -38,11 +49,14 @@ open(my $fhOut, '>', $outputFile)
   or die "Could not open file '$outputFile' $!";
 
 
+print "Reading text files...\n";
+
+
+my $numLines = 0;
 # Main loop to build the ngram model. Iterates through each row in the line in the file. Stop when we reach the end of the input file.
 while (my $row = <$fh>) {
 
   # Perform cleanup for each line.
-
   # Remove white space at edges.
   chomp $row;
 
@@ -50,7 +64,7 @@ while (my $row = <$fh>) {
   $row = lc($row);
 
   # Remove anything that is not a letter, number, or punctuation (, . ! ?). Accomplishes this by replacing other characters with a space.
-  $row =~ s/[^a-zA-Z0-9,.!?]/ /g;
+  $row =~ s/[^a-zA-Z0-9',.!?]/ /g;
 
   # Make sure that punctuation is seperated from words by a space.
   $row =~ s/([,.!?])/ $1 /g;
@@ -59,7 +73,15 @@ while (my $row = <$fh>) {
   $row =~ s/\s+/ /g;
   my @tokens = split(/\s+/, $row);
   push (@tokenArray, @tokens);
+  $numLines++;
 }
+
+my $numTokens = scalar @tokenArray;
+print "\t$numLines lines read.\n";
+print "\t$numTokens tokens found.\n";
+
+
+print "Building n-gram model...\n";
 
 
 # This variable contains the history as we go through the tokens. Since the list of tokens starts with a new sentence, history is first intialized with START_TAG.
@@ -70,7 +92,7 @@ for my $token (@tokenArray) {
 
   # History must be n-1 words or less in order to continue.
   my $historyLength = scalar @history;
-  if($historyLength > $n-1) {
+  if($historyLength > $n-1){
     splice @history, 0, 1;
   }
 
@@ -108,13 +130,21 @@ for my $token (@tokenArray) {
   }
 }
 
+my $hashSize = scalar %hash;
+print "\t$hashSize entries in the hash table.\n";
+
 # Print out hash for testing
 foreach my $historyKey (sort keys %hash) {
   foreach my $tokenKey (keys %{ $hash{$historyKey} }) {
     my $huhlength = length $historyKey;
-    print $fhOut "$historyKey -> $tokenKey: $hash{$historyKey}{$tokenKey}\n";
+    print $fhOut "$historyKey->$tokenKey:$hash{$historyKey}{$tokenKey}\n";
   }
 }
+
+# Store the number of sentences we will need total.
+my $numSentences = $m;
+
+print "Generating sentences...\n\n";
 
 # Generate sentences.
 while($m > 0) {
@@ -122,8 +152,17 @@ while($m > 0) {
   # For each new sentence, start with just the START_TAG.
   @history = ($START_TAG);
   
+  my $sentenceId = $numSentences - $m + 1;
+  print "$sentenceId) ";
+
   # Loop until we come to a STOP_TAG.
   while(1) {
+
+    # History must be n-1 words or less in order to continue.
+    my $historyLength = scalar @history;
+    if($historyLength > $n-1) {
+      splice @history, 0, 1;
+    }
 
     # Get the concatenated string of history to use as a key.
     my $historyKey = join(' ', @history);
@@ -149,18 +188,33 @@ while($m > 0) {
       }
     }
 
-    # if( $word eq $STOP_TAG ) {
-    #   print ".\n";
-    # }
-    # else {
-    #   print "$word ";
-    # }
+    if( $word eq $STOP_TAG ) {
+      print ".\n";
+      last;
+    }
+    else {
+      my $historyLength = scalar @history;
 
-      print "hello $m \n";
-    $m--;
+      if($historyLength == 1) {
+        my $something = ucfirst $word;
+        print " $something";
+      }
+      elsif($word eq ",") {
+        print "$word";
+      }
+      else {
+        print " $word";
+      }
+    }
+
+    push(@history, $word);
   }
+
+  $m--;
 
 }
 
-my $length = scalar @tokenArray;
-print "size: $length";
+print "\n";
+
+# TODO: make it so nonsense words are not added somehow.
+# TODO: make it so commas and other punctuation sit correctly in terms of spaces.
