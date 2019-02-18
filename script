@@ -1,0 +1,11 @@
+script ngram-log.txt
+
+time perl ngram.pl 1 10 the-kentish-coast.txt pride-and-prejudice.txt frankenstein.txt the-adventures-of-huckleberry-finn.txt the-adventures-of-tom-sawyer.txt beowulf.txt sherlock-holmes.txt two-cities.txt moby-dick.txt -v
+
+time perl ngram.pl 2 10 the-kentish-coast.txt pride-and-prejudice.txt frankenstein.txt the-adventures-of-huckleberry-finn.txt the-adventures-of-tom-sawyer.txt beowulf.txt sherlock-holmes.txt two-cities.txt moby-dick.txt -v
+
+time perl ngram.pl 3 10 the-kentish-coast.txt pride-and-prejudice.txt frankenstein.txt the-adventures-of-huckleberry-finn.txt the-adventures-of-tom-sawyer.txt beowulf.txt sherlock-holmes.txt two-cities.txt moby-dick.txt -v
+
+time perl ngram.pl 4 10 the-kentish-coast.txt pride-and-prejudice.txt frankenstein.txt the-adventures-of-huckleberry-finn.txt the-adventures-of-tom-sawyer.txt beowulf.txt sherlock-holmes.txt two-cities.txt moby-dick.txt -v
+
+exi

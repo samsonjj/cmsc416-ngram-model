@@ -1,4 +1,59 @@
 
+# Author: Jonathan Samson
+# Date: February 19, 2019
+# Class: CMSC 416-001 VCU Spring 2019
+#
+# Problem Description: This program learns an n-gram language model from an arbitrary number of input files, and generates sentences
+# as output. An n-gram model is a way of modeling word probabilities within text, and can be used to generate or predict text. It records
+# the frequency of different n-tuples of words, so that based on the past n-1 words, we can predict the next. For example, if we are
+# learning a trigram (3-gram) model, then for the sentence, "I will go to the store.", we record the different 3-tuples:
+#   (START I will)
+#   (I will go)
+#   (will go to)
+#   (go to the)
+#   (to the store)
+#   (the store END).
+# We can now predict that the word that comes after "go to" would be "store". This can be performed for values of n >= 1.
+#
+#
+# Examples of Input/Output:
+# To run the program, use 'perl ngram.pl n m input-files/s...', where n decides the precision of the n-gram and
+# m decides how many sentences will be given as output. For example, 'perl ngram.pl 3 10 input1.txt input2.txt'
+# will model a trigram from the files input1.txt and input2.txt, and output 10 sentences.
+#
+# example output:
+#
+#   Command line settings : ngram.pl 2 5 58892-0.txt
+#
+#   1) The disappointment masters.
+#   2) This company.
+#   3) As forests, two that are hateful and holds good deal one of scolding or hairy alice disaster cleared out upon the vast difference is associated is said, look out of lomea or other hand, whose original church, surmounted by the foot of these times a hunted embarkation from the next sittingbourne old mansion yet living in obscurity, over and in august 24th, 338 conyers quay lower down to leave its site for sixteen smugglers.
+#   4) Proceeding to one of the citation.
+#   5) An historical fact, and official page references to the so long held the particularly large lawn at business of red cliffs at the avaricious, somewhat mud dredging that might at those wayfarers gifts either side.
+#
+#
+# Algorithm:
+# (1) Iterate through input files, perform tokenzation and add tokens to @tokenArray.
+#       a) Set everything to lower case.
+#       b) Remove anything that is not a number, letter, or punctuation.
+#       c) Sepearte punctuation from adjacent words.
+#       d) Add each token to @tokenArray.
+# (2) Go through the tokens in token array, and add entries into the hash table.
+#       a) As we go through each token, we keep a 'history' of the past n tokens. When we reach a new sentence,
+#       we reset the history to a new array of length 1 of ($START_TAG). For each token we come to, if it is already
+#       recorded, we increment hash{$history}{$token}, otherwise we set hash{$history}{$token} to 1.
+#       * Entries take the form of [history->(word->frequency)], where '->' represents a hash.
+#       So we have a nested hashmap, so we can look up the next words using the past history,
+#       and use those words to retrieve their frequencies coming after the history.
+#       * The beginnning of each sentence is treated as its own token, marked by the value of $START_TAG.
+#       The end of each sentence, or each period (.) exclamation mark (!) and question mark (?) is
+#       recorded instead with the value of $STOP_TAG.
+# (3) Generate m sentences.
+#       a) We record the history of the past n words as we go along, which is initialized with ($START_TAG).
+#       We look in the table for words that follow the history, total up their frequencies, and then pick a random number
+#       between 1 and $frequency, indicating which word to add next. We print the word, add it to the history, and repeat.
+#       b) When we reach a $STOP_TAG, we print a period, and then begin to generate the next sentence.
+
 use strict;
 use warnings;
 use feature 'say';
@@ -72,11 +127,12 @@ print "Reading text files...\n" if $verbose ;
 
 my $numLines = 0;
 
+# (1) Iterate through each file given as input
 for (my $i=2; $i<$argCount; $i++) {
   open(my $fh, '<:encoding(UTF-8)', $ARGV[$i])
     or die "Could not open file '$ARGV[$i]' $!";
 
-  # Main loop to build the ngram model. Iterates through each row in the line in the file. Stop when we reach the end of the input file.
+  # Iterate through each line in the file, collecting tokens and adding them to @tokenArray. Stop when we reach the end of the input file.
   while (my $row = <$fh>) {
 
     # Perform cleanup for each line.
@@ -122,7 +178,8 @@ print "Building n-gram model...\n" if $verbose;
 my @history = ($START_TAG);
 my $reset = 0;
 
-# Iterate through each token, and add entries into the hash table.
+
+# (2) Iterate through @tokensArray, and add [history->(word->frequency)] entries into the hash table.
 for my $token (@tokenArray) {
 
   # History must be n-1 words or less in order to continue.
@@ -142,19 +199,13 @@ for my $token (@tokenArray) {
     $reset = 1;
   }
 
-  # Get a concatenated string of the history to store as as a key in "hash".
+  # Get a concatenated string of the history to store as a key in "hash".
   my $history = join(' ', @history);  
 
   # Check if the history is already contained in the hash. If it is, increment it. If it is not, add it.
-  if( exists $hash{$history} ) {
-    if( exists $hash{$history}{$token} ) {
-      # Exists, so increment
-      $hash{$history}{$token}++;
-    }
-    else {
-      # Does not exist, so add the entry initialized to 1.
-      $hash{$history}{$token} = 1;
-    }
+  if( exists $hash{$history} && exists $hash{$history}{$token}) {
+    # Exists, so increment
+    $hash{$history}{$token}++;
   }
   else {
     # Does not exist, so add the entry initialized to 1.
