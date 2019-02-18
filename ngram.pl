@@ -64,7 +64,7 @@ while (my $row = <$fh>) {
   $row = lc($row);
 
   # Remove anything that is not a letter, number, or punctuation (, . ! ?). Accomplishes this by replacing other characters with a space.
-  $row =~ s/[^a-zA-Z0-9',.!?]/ /g;
+  $row =~ s/[^a-zA-Z0-9,.!?]/ /g;
 
   # Make sure that punctuation is seperated from words by a space.
   $row =~ s/([,.!?])/ $1 /g;
@@ -96,14 +96,19 @@ for my $token (@tokenArray) {
     splice @history, 0, 1;
   }
 
+  # If token is empty string, we don't want it.
+  if($token eq "") {
+    next;
+  }
+
   # If the current token is a sentence terminator (. ! ?), change token to STOP_TAG, and indicate that we must reset the history, by setting reset = 1.
-  if($token =~ m/[.!?]/) {
+  if($token =~ m/^[.!?]$/) {
     $token = $STOP_TAG;
     $reset = 1;
   }
 
   # Get a concatenated string of the history to store as as a key in "hash".
-  my $history = join(' ', @history);
+  my $history = join(' ', @history);  
 
   # Check if the history is already contained in the hash. If it is, increment it. If it is not, add it.
   if( exists $hash{$history} ) {
@@ -134,12 +139,15 @@ my $hashSize = scalar %hash;
 print "\t$hashSize entries in the hash table.\n";
 
 # Print out hash for testing
-foreach my $historyKey (sort keys %hash) {
-  foreach my $tokenKey (keys %{ $hash{$historyKey} }) {
-    my $huhlength = length $historyKey;
-    print $fhOut "$historyKey->$tokenKey:$hash{$historyKey}{$tokenKey}\n";
-  }
-}
+# foreach my $historyKey (sort keys %hash) {
+#   foreach my $tokenKey (keys %{ $hash{$historyKey} }) {
+#     my $huhlength = length $historyKey;
+#     print $fhOut "$historyKey->$tokenKey:$hash{$historyKey}{$tokenKey}\n";
+#   }
+# }
+# foreach my $historyKey (sort keys %hash) {
+#   print $fhOut $historyKey."\n";
+# }
 
 # Store the number of sentences we will need total.
 my $numSentences = $m;
@@ -180,7 +188,6 @@ while($m > 0) {
     my $word = "";
     foreach my $tokenKey ( keys %{ $hash{$historyKey} } ) {
       $randomIndex -= $hash{$historyKey}{$tokenKey};
-        #print "hello $randomIndex \n";
 
       if($randomIndex <= 0) {
         $word = $tokenKey;
@@ -197,7 +204,7 @@ while($m > 0) {
 
       if($historyLength == 1) {
         my $something = ucfirst $word;
-        print " $something";
+        print "$something";
       }
       elsif($word eq ",") {
         print "$word";
@@ -218,3 +225,10 @@ print "\n";
 
 # TODO: make it so nonsense words are not added somehow.
 # TODO: make it so commas and other punctuation sit correctly in terms of spaces.
+# BUG (SOLVED): commas are being choses as first words in a sentence.
+  # Being caused by difficulties in the corpus
+  # i.e. Sr., Toronto
+# BUG (SOLVED): multiple spaces are being placed at a time, especially at the beginning of a sentence.
+# BUG (SOLVED): history keys are being stored which are less than n-1 tokens, and which don't start with a START_TAG.
+  # actually, all keys being stored are 3 tokens, but some tokens are just empty strings ( why? )
+  # caused by '[' symbol at least
